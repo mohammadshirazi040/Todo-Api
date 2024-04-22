@@ -1,64 +1,71 @@
-const todoList = document.getElementById("todoList");
-const form = document.getElementById("addTodoForm");
 const todoInput = document.getElementById("todo-input");
+const addButton = document.getElementById("btn");
+const removeButton = document.getElementById("btn-remove");
+const todoList = document.getElementById("todoList");
 
-let state = {
-  todos: [],
-};
-
-function render() {
-  todoList.innerHTML = "";
-
-  state.todos.forEach((todo) => {
-    const li = document.createElement("li");
-    li.textContent = todo.description;
-
-    todoList.append(li);
-  });
-}
-render();
+let state = null;
 
 function refresh() {
   fetch("http://localhost:4730/todos")
-    .then((response) => {
-      console.log("response", response);
-      return response.json();
+    .then((res) => {
+      return res.json();
     })
     .then((data) => {
-      console.log("data", data);
-
-      state.todos = data;
+      state = data;
       render();
     });
 }
 
-refresh();
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+function render() {
+  state.forEach((todo) => {
+    const li = document.createElement("li");
+    li.textContent = todo.description;
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
 
-  const description = todoInput.value;
+    li.appendChild(checkbox);
+    todoList.appendChild(li);
+    console.log(state);
+
+    checkbox.addEventListener("click", (e) => {
+      if (e.target.checked) {
+        todo.done = true;
+      }
+    });
+  });
+}
+
+addButton.addEventListener("click", () => {
+  todoList.innerHTML = "";
 
   const newTodo = {
-    description: description,
+    description: todoInput.value,
     done: false,
   };
 
   fetch("http://localhost:4730/todos", {
     method: "POST",
-    body: JSON.stringify(newTodo),
     headers: {
       "Content-Type": "application/json",
     },
-  })
-    .then((response) => {
-      console.log("response", response);
-      return response.json();
-    })
-    .then((data) => {
-      console.log("data", data);
-
-      // state.todos = data;
-      // render();
-      refresh();
-    });
+    body: JSON.stringify(newTodo),
+  }).then((res) => {
+    return res.json();
+  });
+  refresh();
 });
+
+removeButton.addEventListener("click", () => {
+  todoList.innerHTML = "";
+
+  state.forEach((todo) => {
+    if (todo.done) {
+      fetch(`http://localhost:4730/todos/${todo.id}`, {
+        method: "DELETE",
+      });
+    }
+  });
+  refresh();
+});
+
+refresh();
